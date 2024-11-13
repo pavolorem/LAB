@@ -1,0 +1,24 @@
+---
+- name: Check DNS
+  hosts: all
+  strategy: free
+  become: true
+  gather_facts: false
+
+  tasks:
+      - name: Check IP address of DNS server
+        lineinfile:
+          path: /etc/resolv.conf
+          regexp: 'nameserver 10.0.0.108'
+          state: absent
+        check_mode: yes
+        changed_when: false
+        register: out
+
+      - debug:
+          msg: "Yes, line exists."
+        when: out.found
+
+      - debug:
+          msg: "Line does NOT exist."
+        when: not out.found
