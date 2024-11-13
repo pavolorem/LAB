@@ -1,0 +1,120 @@
+---
+- name: Configure DNS servers
+  hosts: dns_servers
+  strategy: free
+  become: true
+  gather_facts: false
+  
+  vars:
+    dns_master_ip: 10.0.0.108
+    dns_slave_ip: 10.0.0.109
+    config_path: "/home/ansible/ansible/config"
+    bind_packages:
+      - bind
+      - bind-utils
+    bind_service_name: named
+    bind_config_file: /etc/named.conf
+    bind_log_dir: /var/log/bind
+    zone_file_dir: /var/named
+    bind_working_dir: /var/named
+    is_master: "{{ inventory_hostname == groups['dns_servers'][0] }}"
+
+  vars_files:
+    - "{{ config_path }}/dns_config.yml"
+
+  pre_tasks:
+    - name: Set server role
+      set_fact:
+        server_role: "{{ 'master' if is_master else 'slave' }}"
+
+    - name: Include role-specific variables
+      include_vars: "{{ config_path }}/{{ server_role }}_vars.yml"
+
+  tasks:
+    - name: Install BIND packages
+      ansible.builtin.package:
+        name: "{{ bind_packages }}"
+        state: present
+        update_cache: true
+      tags: [install, packages]
+
+    - name: Configure DNS servers
+      block:
+        - name: Configure resolv.conf
+          template:
+            src: "{{ config_path }}/resolv.conf.j2"
+            dest: /etc/resolv.conf
+          
+        - name: Create initial named.conf
+          template:
+            src: "{{ config_path }}/{{ server_role }}.named.conf.j2"
+            dest: "{{ bind_config_file }}.initial"
+          notify: Restart BIND
+
+        - name: Create zone files
+          template:
+            src: "{{ config_path }}/{{ item.src }}"
+            dest: "{{ zone_file_dir }}/{{ item.dest }}"
+          loop: "{{ zone_files | default([]) }}"
+          when: is_master
+          notify: Restart BIND
+
+        - name: Set permissions for zone files
+          ansible.builtin.file:
+            path: "{{ zone_file_dir }}/{{ item.dest }}"
+            state: file
+            owner: named
+            group: named
+            mode: 0640
+          loop: "{{ zone_files | default([]) }}"
+          when: is_master
+
+        - name: Set permissions for BIND working directory
+          ansible.builtin.file:
+            path: "{{ bind_working_dir }}"
+            state: directory
+            owner: named
+            group: named
+            mode: 0770
+          notify: Restart BIND
+      tags: [config, dns]
+
+    - name: Setup logging
+      block:
+        - name: Create logging directory
+          ansible.builtin.file:
+            path: "{{ bind_log_dir }}"
+            state: directory
+            owner: named
+            group: named
+            mode: 0755
+
+        - name: Create logging configuration
+          template:
+            src: "{{ config_path }}/bind_logging.j2"
+            dest: "{{ bind_config_file }}.logging"
+
+        - name: Combine configurations
+          ansible.builtin.assemble:
+            src: "{{ bind_config_file | dirname }}"
+            dest: "{{ bind_config_file }}"
+            regexp: "^{{ bind_config_file | basename }}\\.(initial|logging)$"
+            backup: yes
+          notify: Restart BIND
+      tags: [config, logging]
+
+    - name: Rndc start querylog
+      shell: "rndc querylog on"
+
+    - name: Ensure BIND service is enabled and started
+      systemd:
+        name: "{{ bind_service_name }}"
+        enabled: yes
+        state: started
+      tags: [service]
+
+  handlers:
+    - name: Restart BIND
+      systemd:
+        name: "{{ bind_service_name }}"
+        state: restarted
