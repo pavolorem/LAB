@@ -1,0 +1,44 @@
+options {
+        listen-on port 53 {10.0.0.109;};
+        directory       "/var/named";
+        dump-file       "/var/named/data/cache_dump.db";
+        statistics-file "/var/named/data/named_stats.txt";
+        memstatistics-file "/var/named/data/named_mem_stats.txt";
+        secroots-file   "/var/named/data/named.secroots";
+        recursing-file  "/var/named/data/named.recursing";
+        allow-query     {any;};
+        allow-transfer  {none;};
+        
+        recursion yes;
+        
+        dnssec-enable yes;
+        dnssec-validation yes;
+        
+        bindkeys-file "/etc/named.root.key"; 
+        managed-keys-directory "/var/named/dynamic";
+        
+        pid-file "/run/named/named.pid";     
+        session-keyfile "/run/named/session.key";
+
+        include "/etc/crypto-policies/back-ends/bind.config";
+};
+
+zone "." IN {
+        type hint;
+        file "named.ca";
+};
+
+include "/etc/named.rfc1912.zones";
+include "/etc/named.root.key";
+
+zone "rke2.internal" IN {
+         type slave;
+         file "slaves/forward.db";
+         masters {10.0.0.108;}; ## Master server it is receiving DNS Records from
+};
+
+zone  "1.81.10.in-addr.arpa" IN {
+         type slave;
+         file "slaves/reverse.db";
+         masters {10.0.0.108;}; ## Master server it is receiving DNS Records from
+};

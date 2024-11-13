@@ -1,0 +1,31 @@
+log_config:
+  channels:
+    - name: transfers
+      file: "/var/log/bind/transfers"
+      versions: 3
+      size: 10M
+    - name: notify
+      file: "/var/log/bind/notify"
+      versions: 3
+      size: 10M
+    - name: dnssec
+      file: "/var/log/bind/dnssec"
+      versions: 3
+      size: 10M
+    - name: query
+      file: "/var/log/bind/query"
+      versions: 5
+      size: 10M
+    - name: general
+      file: "/var/log/bind/general"
+      versions: 3
+      size: 10M
+  categories:
+    - { name: xfer-out, channels: [transfers, slog] }
+    - { name: xfer-in, channels: [transfers, slog] }
+    - { name: notify, channels: [notify] }
+    - { name: lame-servers, channels: [general] }
+    - { name: config, channels: [general] }
+    - { name: default, channels: [general] }
+    - { name: security, channels: [general, slog] }
+    - { name: dnssec, channels: [dnssec] }

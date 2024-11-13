@@ -1,0 +1,4 @@
+server_role: master
+zone_files:
+  - { src: "forward.db.j2", dest: "forward.db" }
+  - { src: "reverse.db.j2", dest: "reverse.db" }

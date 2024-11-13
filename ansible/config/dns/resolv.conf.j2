@@ -1,0 +1,6 @@
+{% if inventory_hostname == 'node1' %}
+nameserver {{ dns_master_ip }}
+{% else %}
+nameserver {{ dns_master_ip }}
+nameserver {{ dns_slave_ip }}
+{% endif %}
