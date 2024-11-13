@@ -1,0 +1,17 @@
+logging {
+{% for channel in log_config.channels %}
+  channel {{ channel.name }} {
+    file "{{ channel.file }}" versions {{ channel.versions }} size {{ channel.size }};
+    print-time yes;
+    severity info;
+  };
+{% endfor %}
+  channel slog {
+    syslog security;
+    severity info;
+  };
+
+{% for category in log_config.categories %}
+  category {{ category.name }} { {{ category.channels | join('; ') }}; };
+{% endfor %}
+};
