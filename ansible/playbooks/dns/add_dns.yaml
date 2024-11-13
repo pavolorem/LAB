@@ -1,0 +1,9 @@
+---
+- name: Add dns
+  hosts: all
+  strategy: free
+  become: true
+  gather_facts: false
+  tasks:
+      - name: Add IP of DNS server
+        shell: "echo 'nameserver 10.0.0.108\nnameserver 10.0.0.109' > /etc/resolv.conf"
