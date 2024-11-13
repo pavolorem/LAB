@@ -1,0 +1,14 @@
+---
+- hosts: dns_servers
+  strategy: free
+  become: true
+  gather_facts: false
+  
+  tasks:
+     - name: Install bind9
+       ansible.builtin.package:
+         name: 
+           - bind 
+           - bind-utils
+         state: present
+         update_cache: true
