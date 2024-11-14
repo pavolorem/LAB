@@ -1,0 +1,335 @@
+---
+- hosts: elk_server
+  strategy: free
+  become: true
+  gather_facts: false
+  
+  tasks:
+     - name: Add elasticsearch repo
+       shell: "echo '[elasticsearch-8.x]\nname=Elasticsearch repository for 8.x packages\nbaseurl=https://artifacts.elastic.co/packages/8.x/yum\ngpgcheck=1\ngpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch\nenabled=1\nautorefresh=1\ntype=rpm-md' > /etc/yum.repos.d/elasticsearch.repo"
+
+     - name: Install elk and dependencies
+       ansible.builtin.package:
+         name: 
+           - java-11-openjdk
+           - java-11-openjdk-devel
+           - tzdata-java
+           - logstash
+           - filebeat
+           - metricbeat
+           - elasticsearch
+           - kibana
+         state: present
+         update_cache: true
+
+     - name: Enable services
+       shell: "systemctl enable kibana elasticsearch filebeat metricbeat logstash"
+
+     - name: Create config for elasticsearch
+       template:
+         src: "/home/ansible/ansible/config/elasticsearch.j2"
+         dest: /etc/elasticsearch/elasticsearch.yml
+         owner: root
+         group: elasticsearch
+         mode: '0750'
+
+     - name: Copy elasticsearch cert
+       ansible.builtin.copy:
+         src: /home/anonymous/elk.rke2.internal.crt
+         dest: /etc/elasticsearch/certs/
+         owner: root
+         group: elasticsearch
+         mode: '0750'
+         remote_src: yes
+
+     - name: Copy elasticsearch key
+       ansible.builtin.copy:
+         src: /home/anonymous/elk.rke2.internal.key
+         dest: /etc/elasticsearch/certs/
+         owner: root
+         group: elasticsearch
+         mode: '0750'
+         remote_src: yes
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/elasticsearch/certs/
+         owner: root
+         group: elasticsearch
+         mode: '0750'
+         remote_src: yes
+
+     - name: Remove self-signed ca certificates
+       ansible.builtin.file:
+         path: /etc/elasticsearch/certs/http_ca.crt
+         state: absent
+     
+     - name: Remove self-signed p12 certificates
+       ansible.builtin.file:
+         path: /etc/elasticsearch/certs/http.p12
+         state: absent
+
+     - name: Remove self-signed p12 certificates
+       ansible.builtin.file:
+         path: /etc/elasticsearch/certs/transport.p12
+         state: absent
+
+     - name: Restart service elasticsearch
+       service:
+         name: elasticsearch
+         state: restarted
+
+     - name: Create config for kibana
+       template:
+         src: "/home/ansible/ansible/config/kibana.j2"
+         dest: /etc/kibana/kibana.yml
+         owner: root
+         group: kibana
+         mode: '0750'
+           
+     - name: Create directory for kibana certs
+       ansible.builtin.file:
+         path: /etc/kibana/certs/
+         state: directory
+         owner: root
+         group: kibana
+         mode: '0750'
+
+     - name: Copy kibana cert
+       ansible.builtin.copy:
+         src: /home/anonymous/kibana.rke2.internal.crt
+         dest: /etc/kibana/certs/
+         owner: root
+         group: kibana
+         mode: '0750'
+         remote_src: yes
+
+     - name: Copy kibana key
+       ansible.builtin.copy:
+         src: /home/anonymous/kibana.rke2.internal.key
+         dest: /etc/kibana/certs/
+         owner: root
+         group: kibana
+         mode: '0750'
+         remote_src: yes
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/kibana/certs/
+         owner: root
+         group: kibana
+         mode: '0750'
+         remote_src: yes
+
+     - name: Restart service kibana
+       service:
+         name: kibana
+         state: restarted
+
+     - name: Create config for logstash_beats
+       template:
+         src: "/home/ansible/ansible/config/beats.j2"
+         dest: /etc/logstash/conf.d/beats.conf
+         owner: root
+         group: logstash
+         mode: '0750'
+    
+     - name: Create config for logstash
+       template:
+         src: "/home/ansible/ansible/config/logstash.j2"
+         dest: /etc/logstash/logstash.yml
+         owner: root
+         group: logstash
+         mode: '0750' 
+
+     - name: Create directory for logstash certs
+       ansible.builtin.file:
+         path: /etc/logstash/certs
+         state: directory
+         owner: root
+         group: logstash
+         mode: '0750'
+
+     - name: Copy logstash cert
+       ansible.builtin.copy:
+         src: /home/anonymous/logstash.rke2.internal.crt
+         dest: /etc/logstash/certs/
+         owner: root
+         group: logstash
+         mode: '0750'
+         remote_src: yes
+
+     - name: Copy logstash key
+       ansible.builtin.copy:
+         src: /home/anonymous/logstash.rke2.internal.key
+         dest: /etc/logstash/certs/
+         owner: root
+         group: logstash
+         mode: '0750'
+         remote_src: yes
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/logstash/certs/
+         owner: root
+         group: logstash
+         mode: '0750'
+         remote_src: yes
+
+     - name: Restart service logstash
+       service:
+         name: logstash
+         state: restarted
+
+     - name: Create config for filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat.j2"
+         dest: /etc/filebeat/filebeat.yml
+         owner: root
+         group: root
+         mode: '0750' 
+
+     - name: Create directory for filebeat certs
+       ansible.builtin.file:
+         path: /etc/filebeat/certs
+         state: directory
+         owner: root
+         group: root
+         mode: '0750'
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/filebeat/certs
+         owner: root
+         group: root
+         mode: '0750'
+         remote_src: yes
+
+     - name: Enable filebeat modules
+       shell: "filebeat modules enable auditd elasticsearch kibana logstash system"
+
+     - name: Enable auditd module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_auditd.j2"
+         dest: /etc/filebeat/modules.d/auditd.yml
+         owner: root
+         group: root
+         mode: '0644' 
+
+     - name: Enable elasticsearch module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_elasticsearch.j2"
+         dest: /etc/filebeat/modules.d/elasticsearch.yml
+         owner: root
+         group: root
+         mode: '0644' 
+
+     - name: Enable kibana module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_kibana.j2"
+         dest: /etc/filebeat/modules.d/kibana.yml
+         owner: root
+         group: root
+         mode: '0644'         
+
+     - name: Enable logstash module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_logstash.j2"
+         dest: /etc/filebeat/modules.d/logstash.yml
+         owner: root
+         group: root
+         mode: '0644'    
+
+     - name: Enable system module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_system.j2"
+         dest: /etc/filebeat/modules.d/system.yml
+         owner: root
+         group: root
+         mode: '0644'   
+
+     - name: Restart service filebeat
+       service:
+         name: filebeat
+         state: restarted
+
+     - name: Filebeat set up modules
+       shell: "filebeat setup -e"
+
+     - name: Create config for metricbeat
+       template:
+         src: "/home/ansible/ansible/config/metricbeat.j2"
+         dest: /etc/metricbeat/metricbeat.yml
+         owner: root
+         group: root
+         mode: '0750' 
+
+     - name: Create directory for metricbeat certs
+       ansible.builtin.file:
+         path: /etc/metricbeat/certs
+         state: directory
+         owner: root
+         group: root
+         mode: '0750'
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/metricbeat/certs/
+         owner: root
+         group: root
+         mode: '0750'
+         remote_src: yes
+
+     - name: Enable metricbeat modules
+       shell: "metricbeat modules enable elasticsearch-xpack kibana-xpack logstash-xpack system"
+
+     - name: Enable elasticsearch-xpack module in metricbeat
+       template:
+         src: "/home/ansible/ansible/config/elasticsearch-xpack.j2"
+         dest: /etc/metricbeat/modules.d/elasticsearch-xpack.yml
+         owner: root
+         group: root
+         mode: '0644'
+
+     - name: Enable kibana-xpack module in metricbeat
+       template:
+         src: "/home/ansible/ansible/config/kibana-xpack.j2"
+         dest: /etc/metricbeat/modules.d/kibana-xpack.yml
+         owner: root
+         group: root
+         mode: '0644'
+
+     - name: Enable logstash-xpack module in metricbeat
+       template:
+         src: "/home/ansible/ansible/config/logstash-xpack.j2"
+         dest: /etc/metricbeat/modules.d/logstash-xpack.yml
+         owner: root
+         group: root
+         mode: '0644'
+
+     - name: Enable system module in metricbeat
+       template:
+         src: "/home/ansible/ansible/config/system.j2"
+         dest: /etc/metricbeat/modules.d/system.yml
+         owner: root
+         group: root
+         mode: '0644'
+
+     - name: Restart service metricbeat
+       service:
+         name: metricbeat
+         state: restarted
+
+     - name: Metricbeat set up modules
+       shell: "metricbeat setup -e"
+
+     - name: Generate password for elastic user
+       shell: "cd /usr/share/elasticsearch && printf 'password' | ./bin/elasticsearch-reset-password -b -i -u username 'https://elk.rke2.internal:9200'"
+        
+     - name: Generate password for kibana_system user
+       shell: "cd /usr/share/elasticsearch && printf 'password' | ./bin/elasticsearch-reset-password -b -i -u username 'https://elk.rke2.internal:9200'"
