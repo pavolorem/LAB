@@ -1,0 +1,43 @@
+heartbeat.config.monitors:
+  path: ${path.config}/monitors.d/*.yml
+  reload.enabled: true
+  reload.period: 5s
+
+heartbeat.monitors:
+- type: http
+  enabled: true
+  id: elk.rke2.internal
+  name: elk.rke2.internal.http
+  urls: [https://elk.rke2.internal:9200, https://kibana.rke2.internal:5601, https://logstash.rke2.internal:5044]
+  schedule: '@every 10s'
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+setup.kibana:
+  host: "https://kibana.rke2.internal:5601"
+
+output.elasticsearch:
+  hosts: ["https://elk.rke2.internal:9200"]
+  protocol: "https"
+  api_key: "api_key"
+  ssl:
+    enabled: true
+    ca_trusted_fingerprint: "ca_trusted_fingerprint"
+
+processors:
+  - add_observer_metadata:
+      geo:
+        name: elk_cluster
+        location: gps
+        continent_name: Central Europe
+        country_iso_code: EU
+        region_name: Bratislava
+        region_iso_code: BA
+        city_name: Bratislava
+
+monitoring.enabled: true
+
+monitoring.elasticsearch:
+  api_key: "api_key"

@@ -1,0 +1,14 @@
+# Module: elasticsearch
+# Docs: https://www.elastic.co/guide/en/beats/metricbeat/main/metricbeat-module-elasticsearch.html
+
+- module: elasticsearch
+  metricsets:
+    - node
+    - node_stats
+  xpack.enabled: true
+  period: 10s
+  hosts: ["https://elk.rke2.internal:9200"]
+  username: "username"
+  password: "password"
+  #api_key: "api_key"
+  ssl.certificate_authorities: ["/etc/elasticsearch/certs/ca.crt"]                                                                     

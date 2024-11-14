@@ -1,0 +1,11 @@
+# Module: kibana
+# Docs: https://www.elastic.co/guide/en/beats/metricbeat/main/metricbeat-module-kibana.html
+
+- module: kibana
+  metricsets: ["status"]
+  xpack.enabled: true
+  period: 10s
+  hosts: ["https://kibana.rke2.internal:5601"]
+  username: "username"
+  password: "password"
+  ssl.certificate_authorities: ["/etc/kibana/certs/ca.crt"]

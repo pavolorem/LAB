@@ -1,0 +1,10 @@
+node.name: logstash.rke2.internal
+path.data: /var/lib/logstash
+path.config: /etc/logstash/conf.d/*.conf
+path.logs: /var/log/logstash
+xpack.monitoring.enabled: false
+#xpack.monitoring.elasticsearch.username:
+#xpack.monitoring.elasticsearch.password:
+xpack.monitoring.elasticsearch.api_key: api_key
+xpack.monitoring.elasticsearch.hosts: ["https://elk.rke2.internal:9200"]
+xpack.monitoring.elasticsearch.ssl.certificate_authority: "/etc/logstash/certs/ca.crt"

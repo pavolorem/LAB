@@ -1,0 +1,28 @@
+cluster.name: elk.rke2.internal
+node.name: elk.rke2.internal
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: elk.rke2.internal
+http.port: 9200
+xpack.security.enabled: true
+xpack.security.enrollment.enabled: true
+xpack.security.autoconfiguration.enabled: true
+xpack.security.authc.password_hashing.algorithm: pbkdf2_100000
+xpack.security.authc.token.enabled: false
+xpack.security.authc.token.timeout: 20m
+xpack.security.authc.api_key.hashing.algorithm: pbkdf2_100000
+xpack.security.http.ssl:
+  enabled: true
+  verification_mode: certificate
+  key: /etc/elasticsearch/certs/elk.rke2.internal.key
+  certificate: /etc/elasticsearch/certs/elk.rke2.internal.crt
+  certificate_authorities: /etc/elasticsearch/certs/ca.crt
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  key: /etc/elasticsearch/certs/elk.rke2.internal.key
+  certificate: /etc/elasticsearch/certs/elk.rke2.internal.crt
+  certificate_authorities: /etc/elasticsearch/certs/ca.crt
+cluster.initial_master_nodes: ["elk.rke2.internal"]
+http.host: elk.rke2.internal
+transport.host: elk.rke2.internal

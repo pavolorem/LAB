@@ -1,0 +1,32 @@
+server.port: 5601
+server.host: "0.0.0.0"
+server.publicBaseUrl: "https://0.0.0.0:5601"
+server.name: "kibana.rke2.internal"
+server.ssl.enabled: true
+server.ssl.certificate: /etc/kibana/certs/kibana.rke2.internal.crt
+server.ssl.key: /etc/kibana/certs/kibana.rke2.internal.key
+elasticsearch.hosts: ["https://elk.rke2.internal:9200"]
+elasticsearch.username: "username"
+elasticsearch.password: "password"
+elasticsearch.pingTimeout: 1500
+elasticsearch.requestTimeout: 30000
+elasticsearch.maxSockets: 1024
+elasticsearch.compression: true
+elasticsearch.shardTimeout: 30000
+elasticsearch.ssl.certificate: /etc/kibana/certs/kibana.rke2.internal.crt
+elasticsearch.ssl.key: /etc/kibana/certs/kibana.rke2.internal.key
+elasticsearch.ssl.certificateAuthorities: [ "/etc/kibana/certs/ca.crt" ]
+logging:
+  appenders:
+    file:
+      type: file
+      fileName: /var/log/kibana/kibana.log
+      layout:
+        type: json
+  root:
+    appenders:
+      - default
+      - file
+pid.file: /run/kibana/kibana.pid
+i18n.locale: "en"
+monitoring.kibana.collection.enabled: false

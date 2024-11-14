@@ -1,0 +1,13 @@
+- type: tcp
+  id: master1.rke2.internal
+  name: master1.rke2.internal.tcp
+  enabled: true
+  schedule: '@every 5s'
+  hosts: [""]
+  ipv4: true
+  ipv6: false
+  mode: any
+  ports: [22, 111, 2379, 2380, 6443, 9091, 9345, 10250]
+  ssl:
+  certificate_authorities: ['/etc/heartbeat/certs/ca.crt']
+  supported_protocols: ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
