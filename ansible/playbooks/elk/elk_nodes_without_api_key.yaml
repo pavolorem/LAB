@@ -1,0 +1,168 @@
+---
+- hosts: elk_nodes
+  strategy: free
+  become: true
+  gather_facts: false
+  
+  tasks:
+     - name: Add elasticsearch repo
+       shell: "echo '[elasticsearch-8.x]\nname=Elasticsearch repository for 8.x packages\nbaseurl=https://artifacts.elastic.co/packages/8.x/yum\ngpgcheck=1\ngpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch\nenabled=1\nautorefresh=1\ntype=rpm-md' > /etc/yum.repos.d/elasticsearch.repo"
+
+     - name: Install elk and dependencies
+       ansible.builtin.package:
+        name: 
+          - java-11-openjdk
+          - java-11-openjdk-devel
+          - tzdata-java
+          - filebeat
+          - metricbeat
+        state: present
+        update_cache: true
+
+     - name: Enable services
+       shell: "systemctl enable filebeat metricbeat heartbeat-elastic"
+
+     - name: Create config for filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat.j2"
+         dest: /etc/filebeat/filebeat.yml
+         owner: root
+         group: root
+         mode: '0640' 
+
+     - name: Create directory for filebeat certs
+       ansible.builtin.file:
+         path: /etc/filebeat/certs
+         state: directory
+         owner: root
+         group: root
+         mode: '0640'
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/filebeat/certs
+         owner: root
+         group: root
+         mode: '0640'
+         remote_src: yes
+
+     - name: Enable filebeat modules
+       shell: "filebeat modules enable auditd system"
+
+     - name: Enable auditd module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_auditd.j2"
+         dest: /etc/filebeat/modules.d/auditd.yml
+         owner: root
+         group: root
+         mode: '0644' 
+
+     - name: Enable system module in filebeat
+       template:
+         src: "/home/ansible/ansible/config/filebeat_module_system.j2"
+         dest: /etc/filebeat/modules.d/system.yml
+         owner: root
+         group: root
+         mode: '0644'   
+
+     - name: Restart service filebeat
+       service:
+         name: filebeat
+         state: restarted
+
+     - name: Filebeat set up modules
+       shell: "filebeat setup -e"
+
+     - name: Create config for metricbeat
+       template:
+         src: "/home/ansible/ansible/config/metricbeat.j2"
+         dest: /etc/metricbeat/metricbeat.yml
+         owner: root
+         group: root
+         mode: '0640' 
+
+     - name: Create directory for metricbeat certs
+       ansible.builtin.file:
+         path: /etc/metricbeat/certs
+         state: directory
+         owner: root
+         group: root
+         mode: '0640'
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/metricbeat/certs/
+         owner: root
+         group: root
+         mode: '0640'
+         remote_src: yes
+
+     - name: Enable metricbeat modules
+       shell: "metricbeat modules enable linux system"
+
+     - name: Enable system module in metricbeat
+       template:
+         src: "/home/ansible/ansible/config/system.j2"
+         dest: /etc/metricbeat/modules.d/system.yml
+         owner: root
+         group: root
+         mode: '0644'
+
+     - name: Enable linux module in metricbeat
+       template:
+         src: "/home/ansible/ansible/config/linux.j2"
+         dest: /etc/metricbeat/modules.d/linux.yml
+         owner: root
+         group: root
+         mode: '0644'
+
+     - name: Restart service metricbeat
+       service:
+         name: metricbeat
+         state: restarted
+
+     - name: Metricbeat set up modules
+       shell: "metricbeat setup -e"
+
+     - name: Create config for heartbeat
+       template:
+         src: "/home/ansible/ansible/config/heartbeat.j2"
+         dest: /etc/heartbeat/heartbeat.yml
+         owner: root
+         group: root
+         mode: '0640'
+
+     - name: Create config for heartbeat tcp
+       template:
+         src: "/home/ansible/ansible/config/heartbeat_tcp.j2"
+         dest: /etc/heartbeat/monitors.d/tcp.yml
+         owner: root
+         group: root
+         mode: '0640'
+
+     - name: Create directory for heartbeat certs
+       ansible.builtin.file:
+         path: /etc/heartbeat/certs
+         state: directory
+         owner: root
+         group: root
+         mode: '0640'
+
+     - name: Copy ca cert
+       ansible.builtin.copy:
+         src: /etc/pki/ca-trust/source/anchors/ca.crt
+         dest: /etc/heartbeat/certs/
+         owner: root
+         group: root
+         mode: '0640'
+         remote_src: yes
+
+     - name: Restart service heartbeat
+       service:
+         name: heartbeat
+         state: restarted
+
+     - name: heartbeat set up modules
+       shell: "heartbeat setup -e"
