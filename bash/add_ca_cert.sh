@@ -1,4 +1,5 @@
 #!/bin/bash
+
 ## copy and check ca.ert
 cp ca.crt /etc/pki/ca-trust/source/anchors/ && \
 update-ca-trust && \
